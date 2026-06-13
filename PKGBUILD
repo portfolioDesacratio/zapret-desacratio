@@ -1,4 +1,4 @@
-# Maintainer: kall1shnik0vv <desacratio@gmail.com>
+# Maintainer: portfolioDesacratio <desacratio@gmail.com>
 # ═══════════════════════════════════════════════════════════════
 # PKGBUILD for zapret-desacratio
 # AUR package: yay -S zapret-desacratio
@@ -9,7 +9,7 @@ pkgver=1.0.0
 pkgrel=1
 pkgdesc="Universal DPI circumvention tool with beautiful TUI control panel. Wraps bol-van/zapret with easy install, strategy management, and domain lists."
 arch=('x86_64' 'aarch64')
-url="https://github.com/kall1shnik0vv/zapret-desacratio"
+url="https://github.com/portfolioDesacratio/zapret-desacratio"
 license=('GPL3')
 depends=(
     'bash'
@@ -26,7 +26,7 @@ makedepends=(
 )
 conflicts=('zapret')
 provides=('zapret')
-source=("${pkgname}-${pkgver}.tar.gz::https://github.com/kall1shnik0vv/${pkgname}/archive/v${pkgver}.tar.gz")
+source=("${pkgname}-${pkgver}.tar.gz::https://github.com/portfolioDesacratio/${pkgname}/archive/v${pkgver}.tar.gz")
 sha256sums=('SKIP')
 
 build() {
@@ -125,7 +125,7 @@ pkgbase = zapret-desacratio
 pkgdesc = Universal DPI circumvention tool with beautiful TUI control panel
 pkgver = 1.0.0
 pkgrel = 1
-url = https://github.com/kall1shnik0vv/zapret-desacratio
+url = https://github.com/portfolioDesacratio/zapret-desacratio
 arch = x86_64
 arch = aarch64
 license = GPL3

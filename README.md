@@ -25,7 +25,7 @@
 ### Через curl (любой дистрибутив)
 
 ```bash
-sh -c "$(curl -fsSL https://raw.githubusercontent.com/kall1shnik0vv/zapret-desacratio/main/installer.sh)"
+sh -c "$(curl -fsSL https://raw.githubusercontent.com/portfolioDesacratio/zapret-desacratio/main/installer.sh)"
 ```
 
 ### Через AUR (Arch, CachyOS, Manjaro и др.)
@@ -39,7 +39,7 @@ paru -S zapret-desacratio
 ### Вручную
 
 ```bash
-git clone https://github.com/kall1shnik0vv/zapret-desacratio.git
+git clone https://github.com/portfolioDesacratio/zapret-desacratio.git
 cd zapret-desacratio
 chmod +x installer.sh
 sudo ./installer.sh
@@ -144,7 +144,7 @@ sudo zapret
 ## 🛠 Разработка
 
 ```bash
-git clone https://github.com/kall1shnik0vv/zapret-desacratio.git
+git clone https://github.com/portfolioDesacratio/zapret-desacratio.git
 cd zapret-desacratio
 
 # Режим разработки — скрипт сам найдёт библиотеки в ./src/lib/

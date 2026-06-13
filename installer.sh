@@ -3,7 +3,7 @@
 # zapret-desacratio — Universal DPI Circumvention Installer
 # ══════════════════════════════════════════════════════════════════════════════
 # Использование:
-#   sh -c "$(curl -fsSL https://raw.githubusercontent.com/kall1shnik0vv/zapret-desacratio/main/installer.sh)"
+#   sh -c "$(curl -fsSL https://raw.githubusercontent.com/portfolioDesacratio/zapret-desacratio/main/installer.sh)"
 #
 # Поддерживаемые дистрибутивы:
 #   Arch, Debian, Ubuntu, Fedora, RHEL, OpenSUSE, Gentoo, Alpine, Void, Alt
@@ -253,7 +253,7 @@ build_zapret() {
 
 # ─── Install Control Script and Configs ──────────────────────────────────────
 install_control() {
-    local repo_url="https://github.com/kall1shnik0vv/zapret-desacratio.git"
+    local repo_url="https://github.com/portfolioDesacratio/zapret-desacratio.git"
     local tmpdir="/tmp/zapret-control-$$"
     
     print_info "Загрузка панели управления..."
@@ -346,7 +346,7 @@ show_finish() {
     ${C_WHITE}Запустить сейчас:${C_RESET}
     ${C_BOLD}       sudo zapret${C_RESET}
 
-    ${C_NORD3}Подробнее: https://github.com/kall1shnik0vv/zapret-desacratio${C_RESET}
+    ${C_NORD3}Подробнее: https://github.com/portfolioDesacratio/zapret-desacratio${C_RESET}
     ${C_GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${C_RESET}
 
 EOF

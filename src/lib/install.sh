@@ -155,7 +155,7 @@ update_strategies() {
     local tmp_dir="/tmp/zapret-update"
     rm -rf "$tmp_dir"
     
-    git clone --depth=1 https://github.com/kall1shnik0vv/zapret-desacratio.git "$tmp_dir" 2>/dev/null || {
+    git clone --depth=1 https://github.com/portfolioDesacratio/zapret-desacratio.git "$tmp_dir" 2>/dev/null || {
         print_error "Не удалось загрузить обновления"
         return 1
     }
