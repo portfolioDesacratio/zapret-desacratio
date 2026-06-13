@@ -324,11 +324,11 @@ Wants=network.target
 
 [Service]
 Type=simple
-ExecStart=/opt/zapret/bin/nfqws --daemon --qnum=200 --dpi-desync=fake --wssize=1:6
+ExecStart=/opt/zapret/bin/nfqws --qnum=200 --dpi-desync=fake --wssize=1:6
 ExecStop=/usr/bin/pkill -f nfqws
 Restart=on-failure
 RestartSec=10
-KillMode=process
+KillMode=mixed
 Nice=-10
 
 [Install]
