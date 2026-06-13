@@ -300,6 +300,10 @@ ZAPRET_PORT_RANGE="80,443"
 ZAPRET_THEME="nord"
 ZAPRET_LAST_UPDATE="$(date '+%Y-%m-%d %H:%M:%S')"
 CONFIGEOF
+
+    # Create fake TLS/QUIC files directory
+    mkdir -p /etc/zapret/files/fake
+    cp -r "$tmpdir/files/fake/"* /etc/zapret/files/fake/ 2>/dev/null || true
     
     # Copy installer to /opt/zapret/ for reinstall
     cp "$0" /opt/zapret/installer.sh 2>/dev/null || true
@@ -324,8 +328,10 @@ Wants=network.target
 
 [Service]
 Type=simple
-ExecStart=/opt/zapret/bin/nfqws --qnum=200 --dpi-desync=fake --wssize=1:6
+ExecStartPre=/bin/bash -c '/sbin/iptables -N ZAPRET 2>/dev/null; /sbin/iptables -F ZAPRET 2>/dev/null; /sbin/iptables -I OUTPUT -p tcp -m multiport --dports 80,443 -j ZAPRET 2>/dev/null; /sbin/iptables -A ZAPRET -j NFQUEUE --queue-num 200 --queue-bypass 2>/dev/null; /sbin/ip6tables -N ZAPRET 2>/dev/null; /sbin/ip6tables -F ZAPRET 2>/dev/null; /sbin/ip6tables -I OUTPUT -p tcp -m multiport --dports 80,443 -j ZAPRET 2>/dev/null; /sbin/ip6tables -A ZAPRET -j NFQUEUE --queue-num 200 --queue-bypass 2>/dev/null; /sbin/iptables -I OUTPUT -p udp --dport 443 -j DROP 2>/dev/null; /sbin/ip6tables -I OUTPUT -p udp --dport 443 -j DROP 2>/dev/null; true'
+ExecStart=/opt/zapret/bin/nfqws --qnum=200 --filter-tcp=80 --dpi-desync=split2 --dpi-desync-autottl=2 --dpi-desync-fooling=md5sig --new --filter-tcp=443 --dpi-desync=fake --dpi-desync-fooling=badsum
 ExecStop=/usr/bin/pkill -f nfqws
+ExecStopPost=/bin/bash -c '/sbin/iptables -F ZAPRET 2>/dev/null; /sbin/iptables -X ZAPRET 2>/dev/null; /sbin/ip6tables -F ZAPRET 2>/dev/null; /sbin/ip6tables -X ZAPRET 2>/dev/null; /sbin/iptables -D OUTPUT -p udp --dport 443 -j DROP 2>/dev/null; /sbin/ip6tables -D OUTPUT -p udp --dport 443 -j DROP 2>/dev/null; true'
 Restart=on-failure
 RestartSec=10
 KillMode=mixed

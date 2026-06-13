@@ -6,34 +6,21 @@
 get_service_status() {
   case "$INIT_SYSTEM" in
     systemd)
-      if systemctl is-active --quiet "$ZAPRET_SERVICE" 2>/dev/null; then
-        echo "running"
-      elif systemctl is-enabled --quiet "$ZAPRET_SERVICE" 2>/dev/null; then
-        echo "enabled"
-      else
-        echo "stopped"
-      fi
+      if systemctl is-active --quiet "$ZAPRET_SERVICE" 2>/dev/null; then echo "running"
+      elif systemctl is-enabled --quiet "$ZAPRET_SERVICE" 2>/dev/null; then echo "enabled"
+      else echo "stopped"; fi
       ;;
     openrc)
-      if rc-service "$ZAPRET_SERVICE" status 2>/dev/null | grep -q "started"; then
-        echo "running"
-      else
-        echo "stopped"
-      fi
+      if rc-service "$ZAPRET_SERVICE" status 2>/dev/null | grep -q "started"; then echo "running"
+      else echo "stopped"; fi
       ;;
     runit)
-      if sv status "$ZAPRET_SERVICE" 2>/dev/null | grep -q "run"; then
-        echo "running"
-      else
-        echo "stopped"
-      fi
+      if sv status "$ZAPRET_SERVICE" 2>/dev/null | grep -q "run"; then echo "running"
+      else echo "stopped"; fi
       ;;
     *)
-      if pgrep -f "nfqws|tpws" &>/dev/null; then
-        echo "running"
-      else
-        echo "stopped"
-      fi
+      if pgrep -f "nfqws|tpws" &>/dev/null; then echo "running"
+      else echo "stopped"; fi
       ;;
   esac
 }
@@ -46,11 +33,8 @@ service_start() {
     runit)   sv start "$ZAPRET_SERVICE" ;;
     *)       /opt/zapret/init.d/sysv/zapret start ;;
   esac
-  if [[ "$(get_service_status)" == "running" ]]; then
-    ok "zapret запущен"
-  else
-    fail "не удалось запустить zapret"
-  fi
+  if [[ "$(get_service_status)" == "running" ]]; then ok "zapret запущен"
+  else fail "не удалось запустить zapret"; fi
 }
 
 service_stop() {
@@ -61,11 +45,8 @@ service_stop() {
     runit)   sv stop "$ZAPRET_SERVICE" ;;
     *)       /opt/zapret/init.d/sysv/zapret stop ;;
   esac
-  if [[ "$(get_service_status)" == "stopped" ]]; then
-    ok "zapret остановлен"
-  else
-    fail "не удалось остановить zapret"
-  fi
+  if [[ "$(get_service_status)" == "stopped" ]]; then ok "zapret остановлен"
+  else fail "не удалось остановить zapret"; fi
 }
 
 service_restart() {
@@ -76,11 +57,8 @@ service_restart() {
     runit)   sv restart "$ZAPRET_SERVICE" ;;
     *)       /opt/zapret/init.d/sysv/zapret restart ;;
   esac
-  if [[ "$(get_service_status)" == "running" ]]; then
-    ok "zapret перезапущен"
-  else
-    fail "не удалось перезапустить zapret"
-  fi
+  if [[ "$(get_service_status)" == "running" ]]; then ok "zapret перезапущен"
+  else fail "не удалось перезапустить zapret"; fi
 }
 
 service_enable() {
@@ -106,15 +84,18 @@ service_disable() {
 }
 
 create_systemd_service() {
-  cat > /etc/systemd/system/zapret.service << 'EOSERVICE'
+  cat > /etc/systemd/system/zapret.service << 'SVC'
 [Unit]
 Description=zapret-desacratio — DPI circumvention daemon
 After=network.target
+Wants=network.target
 
 [Service]
 Type=simple
-ExecStart=/opt/zapret/bin/nfqws --qnum=200 --dpi-desync=fake --wssize=1:6
+ExecStartPre=/bin/bash -c '/sbin/iptables -N ZAPRET 2>/dev/null; /sbin/iptables -F ZAPRET 2>/dev/null; /sbin/iptables -I OUTPUT -p tcp -m multiport --dports 80,443 -j ZAPRET 2>/dev/null; /sbin/iptables -A ZAPRET -j NFQUEUE --queue-num 200 --queue-bypass 2>/dev/null; /sbin/ip6tables -N ZAPRET 2>/dev/null; /sbin/ip6tables -F ZAPRET 2>/dev/null; /sbin/ip6tables -I OUTPUT -p tcp -m multiport --dports 80,443 -j ZAPRET 2>/dev/null; /sbin/ip6tables -A ZAPRET -j NFQUEUE --queue-num 200 --queue-bypass 2>/dev/null; /sbin/iptables -I OUTPUT -p udp --dport 443 -j DROP 2>/dev/null; /sbin/ip6tables -I OUTPUT -p udp --dport 443 -j DROP 2>/dev/null; true'
+ExecStart=/opt/zapret/bin/nfqws --qnum=200 --filter-tcp=80 --dpi-desync=fake --wssize=1:6 --new --filter-tcp=443 --dpi-desync=fake --wssize=1:6
 ExecStop=/usr/bin/pkill -f nfqws
+ExecStopPost=/bin/bash -c '/sbin/iptables -F ZAPRET 2>/dev/null; /sbin/iptables -X ZAPRET 2>/dev/null; /sbin/ip6tables -F ZAPRET 2>/dev/null; /sbin/ip6tables -X ZAPRET 2>/dev/null; /sbin/iptables -D OUTPUT -p udp --dport 443 -j DROP 2>/dev/null; /sbin/ip6tables -D OUTPUT -p udp --dport 443 -j DROP 2>/dev/null; true'
 Restart=on-failure
 RestartSec=10
 KillMode=mixed
@@ -122,53 +103,66 @@ Nice=-10
 
 [Install]
 WantedBy=multi-user.target
-EOSERVICE
+SVC
   systemctl daemon-reload
 }
 
 create_openrc_service() {
-  cat > /etc/init.d/zapret << 'EOOPENRC'
+  cat > /etc/init.d/zapret << 'ORC'
 #!/sbin/openrc-run
 description="zapret-desacratio — DPI circumvention daemon"
 command="/opt/zapret/bin/nfqws"
-command_args="--qnum=200 --dpi-desync=fake --wssize=1:6"
+command_args="--qnum=200 --filter-tcp=80 --dpi-desync=fake --wssize=1:6 --new --filter-tcp=443 --dpi-desync=fake --wssize=1:6"
 pidfile="/run/${RC_SVCNAME}.pid"
 depend() { need net; }
-start_pre() { checkpath -d -m 0755 -o root:root /run; }
-EOOPENRC
+start_pre() {
+  checkpath -d -m 0755 -o root:root /run
+  /sbin/iptables -N ZAPRET 2>/dev/null || true
+  /sbin/iptables -F ZAPRET 2>/dev/null || true
+  /sbin/iptables -I OUTPUT -p tcp -m multiport --dports 80,443 -j ZAPRET 2>/dev/null || true
+  /sbin/iptables -A ZAPRET -j NFQUEUE --queue-num 200 --queue-bypass 2>/dev/null || true
+  /sbin/iptables -I OUTPUT -p udp --dport 443 -j DROP 2>/dev/null || true
+  /sbin/ip6tables -N ZAPRET 2>/dev/null || true
+  /sbin/ip6tables -F ZAPRET 2>/dev/null || true
+  /sbin/ip6tables -I OUTPUT -p tcp -m multiport --dports 80,443 -j ZAPRET 2>/dev/null || true
+  /sbin/ip6tables -A ZAPRET -j NFQUEUE --queue-num 200 --queue-bypass 2>/dev/null || true
+  /sbin/ip6tables -I OUTPUT -p udp --dport 443 -j DROP 2>/dev/null || true
+}
+stop_post() {
+  /sbin/iptables -F ZAPRET 2>/dev/null || true
+  /sbin/iptables -X ZAPRET 2>/dev/null || true
+  /sbin/iptables -D OUTPUT -p udp --dport 443 -j DROP 2>/dev/null || true
+  /sbin/ip6tables -F ZAPRET 2>/dev/null || true
+  /sbin/ip6tables -X ZAPRET 2>/dev/null || true
+  /sbin/ip6tables -D OUTPUT -p udp --dport 443 -j DROP 2>/dev/null || true
+}
+ORC
   chmod +x /etc/init.d/zapret
 }
 
 show_service_status() {
   local s; s=$(get_service_status)
   header "Статус"
-
   case "$s" in
     running) info "состояние     ${SYM_RUNNING} работает" ;;
     stopped) info "состояние     ${SYM_STOPPED} остановлен" ;;
     enabled) info "состояние     ${SYM_WARN} включён (не запущен)" ;;
   esac
-
   info "init          $INIT_SYSTEM"
   info "дистрибутив   $DISTRO ($DISTRO_FAMILY)"
-
   if [[ "$s" == "running" ]]; then
     local pids; pids=$(pgrep -f "nfqws|tpws" | tr '\n' ' ')
     info "pid           $pids"
     if [[ "$INIT_SYSTEM" == "systemd" ]]; then
-      local uptime
-      uptime=$(systemctl show "$ZAPRET_SERVICE" -p ActiveEnterTimestamp --value 2>/dev/null || echo "N/A")
+      local uptime; uptime=$(systemctl show "$ZAPRET_SERVICE" -p ActiveEnterTimestamp --value 2>/dev/null || echo "N/A")
       info "запущен       $uptime"
     fi
-    local mem
-    mem=$(ps -o rss= -p $pids 2>/dev/null | awk '{sum+=$1} END {printf "%.1f MB", sum/1024}')
+    local mem; mem=$(ps -o rss= -p $pids 2>/dev/null | awk '{sum+=$1} END {printf "%.1f MB", sum/1024}')
     info "память        $mem"
   fi
-
   if [[ -f "$ZAPRET_LOG" ]]; then
     local log_size; log_size=$(du -h "$ZAPRET_LOG" 2>/dev/null | cut -f1)
     info "лог           $log_size"
   fi
-
   footer
 }

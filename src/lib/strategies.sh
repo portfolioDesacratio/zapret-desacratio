@@ -18,28 +18,42 @@ apply_strategy() {
   info "применяю ${C_BOLD}${strategy}${C_RESET}…"
   service_stop
 
-  iptables -F ZAPRET 2>/dev/null;  iptables -X ZAPRET 2>/dev/null
-  ip6tables -F ZAPRET 2>/dev/null; ip6tables -X ZAPRET 2>/dev/null
-  iptables -N ZAPRET 2>/dev/null
-  ip6tables -N ZAPRET 2>/dev/null
+  # clean old firewall rules
+  /sbin/iptables -F ZAPRET 2>/dev/null; /sbin/iptables -X ZAPRET 2>/dev/null
+  /sbin/ip6tables -F ZAPRET 2>/dev/null; /sbin/ip6tables -X ZAPRET 2>/dev/null
 
   local mode="${NFQWS_MODE:-nfqws}"
   local qnum="${NFQWS_QNUM:-200}"
-  local desync="${NFQWS_DESYNC:---dpi-desync=fake}"
-  local wssize="${NFQWS_WSSIZE:---wssize=1:6}"
-  NFQWS_CMD="/opt/zapret/bin/nfqws --qnum=$qnum $desync $wssize"
-  [[ -n "$NFQWS_EXTRA" ]] && NFQWS_CMD="$NFQWS_CMD $NFQWS_EXTRA"
+
+  # build nfqws command
+  if [[ -n "$NFQWS_ARGS" ]]; then
+    NFQWS_CMD="/opt/zapret/bin/$mode --qnum=$qnum $NFQWS_ARGS"
+  else
+    local desync="${NFQWS_DESYNC:---dpi-desync=fake}"
+    local wssize="${NFQWS_WSSIZE:---wssize=1:6}"
+    NFQWS_CMD="/opt/zapret/bin/$mode --qnum=$qnum $desync $wssize"
+    [[ -n "$NFQWS_EXTRA" ]] && NFQWS_CMD="$NFQWS_CMD $NFQWS_EXTRA"
+  fi
   [[ "$ZAPRET_DEBUG" == "true" ]] && NFQWS_CMD="$NFQWS_CMD --debug=1"
 
-  local ports="${ZAPRET_PORT_RANGE:-80,443}"
-  iptables -I OUTPUT -p tcp -m multiport --dports "$ports" -j ZAPRET
-  iptables -A ZAPRET -j NFQUEUE --queue-num "$qnum"
-  ip6tables -I OUTPUT -p tcp -m multiport --dports "$ports" -j ZAPRET
-  ip6tables -A ZAPRET -j NFQUEUE --queue-num "$qnum"
+  # ─── Firewall rules ──────────────────────────────────
+  # chain
+  /sbin/iptables -N ZAPRET 2>/dev/null
+  /sbin/ip6tables -N ZAPRET 2>/dev/null
+
+  # redirect TCP 80,443
+  /sbin/iptables -I OUTPUT -p tcp -m multiport --dports 80,443 -j ZAPRET
+  /sbin/iptables -A ZAPRET -j NFQUEUE --queue-num "$qnum" --queue-bypass
+  /sbin/ip6tables -I OUTPUT -p tcp -m multiport --dports 80,443 -j ZAPRET
+  /sbin/ip6tables -A ZAPRET -j NFQUEUE --queue-num "$qnum" --queue-bypass
+
+  # DROP QUIC (UDP 443) — force TCP fallback
+  /sbin/iptables -I OUTPUT -p udp --dport 443 -j DROP 2>/dev/null || true
+  /sbin/ip6tables -I OUTPUT -p udp --dport 443 -j DROP 2>/dev/null || true
 
   echo "$NFQWS_CMD" > "$ZAPRET_CONFIG/current_params"
   service_start
-  ok "стратегия '$strategy' работает"
+  ok "стратегия '$strategy' — ${mode} работает"
 }
 
 list_strategies() {
@@ -54,9 +68,11 @@ list_strategies() {
     items+=("$name")
 
     if [[ "$name" == "$current" ]]; then
-      printf "  ${F_FROST2}${C_BOLD}%2s${C_RESET}  ${F_GREEN}%s${C_RESET}  ${F_FROST2}[✓]${C_RESET}  ${F_NORD3}%s${C_RESET}\n" "$i" "$name" "$desc"
+      printf "  ${F_FROST2}${C_BOLD}%2s${C_RESET}  ${F_GREEN}%s${C_RESET}  ${F_FROST2}[✓]${C_RESET}  ${F_NORD3}%s${C_RESET}
+" "$i" "$name" "$desc"
     else
-      printf "  ${F_FROST2}${C_BOLD}%2s${C_RESET}  ${F_NORD6}%s${C_RESET}            ${F_NORD3}%s${C_RESET}\n" "$i" "$name" "$desc"
+      printf "  ${F_FROST2}${C_BOLD}%2s${C_RESET}  ${F_NORD6}%s${C_RESET}            ${F_NORD3}%s${C_RESET}
+" "$i" "$name" "$desc"
     fi
     ((i++))
   done
@@ -72,37 +88,25 @@ list_strategies() {
 
 create_custom_strategy() {
   header "Новая стратегия"
-
   printf "  ${F_NORD3}название:${C_RESET} "
   read -r name
   [[ -z "$name" ]] && { fail "ну хоть что-то"; return; }
   name="${name,,}"; name="${name// /-}"
   local file="$ZAPRET_STRATEGIES/${name}.conf"
   [[ -f "$file" ]] && { fail "'$name' уже есть"; return; }
-
   printf "  ${F_NORD3}описание:${C_RESET} "
   read -r desc
   printf "  ${F_NORD3}режим (nfqws/tpws) [nfqws]:${C_RESET} "
   read -r mode; [[ -z "$mode" ]] && mode="nfqws"
-  printf "  ${F_NORD3}метод (fake/fakeknown/hostcase/…) [fake]:${C_RESET} "
-  read -r desync; [[ -z "$desync" ]] && desync="fake"
-  printf "  ${F_NORD3}wssize [1:6]:${C_RESET} "
-  read -r wssize; [[ -z "$wssize" ]] && wssize="1:6"
-  printf "  ${F_NORD3}доп. параметры:${C_RESET} "
-  read -r extra
-
-  cat > "$file" << EOF
-# ═══════════════════════════════════════════════════════════════
+  printf "  ${F_NORD3}аргументы nfqws (полная строка):${C_RESET} "
+  read -r args
+  cat > "$file" << STRAT_END
 # Стратегия: $name
 # DESC: $desc
-# ═══════════════════════════════════════════════════════════════
 NFQWS_MODE="$mode"
 NFQWS_QNUM="200"
-NFQWS_WSSIZE="--wssize=$wssize"
-NFQWS_DESYNC="--dpi-desync=$desync"
-NFQWS_EXTRA="$extra"
-EOF
-
+NFQWS_ARGS="$args"
+STRAT_END
   ok "'$name' создана"
   confirm "применить сейчас?" && apply_strategy "$name"
   footer
