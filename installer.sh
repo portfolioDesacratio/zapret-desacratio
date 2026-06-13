@@ -207,7 +207,7 @@ install_deps() {
             ;;
     esac
     
-    run_cmd "Установка зависимостей сборки" bash -c "${PRECMD:+$PRECMD run_cmd "Установка зависимостей сборки" bash -c "$INSTALL_CMD $DEPS"run_cmd "Установка зависимостей сборки" bash -c "$INSTALL_CMD $DEPS" }$INSTALL_CMD $DEPS" || {
+    run_cmd "Установка зависимостей сборки" bash -c "${PRECMD:+$PRECMD && }$INSTALL_CMD $DEPS" || {
         print_warn "Некоторые пакеты не установились. Продолжаем..."
     }
 }
@@ -273,6 +273,7 @@ install_control() {
     
     # Create directories
     mkdir -p /opt/zapret/{lib,strategies,lists,themes,config}
+    mkdir -p /etc/zapret
     
     # Install libraries
     cp -r "$tmpdir/src/lib/"* /opt/zapret/lib/
