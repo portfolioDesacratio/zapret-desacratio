@@ -163,6 +163,7 @@ install_deps() {
     case "$DISTRO" in
         arch|artix|manjaro|endeavour|garuda|cachyos)
             DEPS="base-devel libcap git libnetfilter_queue iptables"
+            PRECMD="$PKG_MGR -Sy"
             INSTALL_CMD="$PKG_MGR -S --noconfirm"
             ;;
         debian|ubuntu|mint|kali|pop|zorin)
@@ -206,7 +207,7 @@ install_deps() {
             ;;
     esac
     
-    run_cmd "Установка зависимостей сборки" bash -c "$INSTALL_CMD $DEPS" || {
+    run_cmd "Установка зависимостей сборки" bash -c "${PRECMD:+$PRECMD run_cmd "Установка зависимостей сборки" bash -c "$INSTALL_CMD $DEPS"run_cmd "Установка зависимостей сборки" bash -c "$INSTALL_CMD $DEPS" }$INSTALL_CMD $DEPS" || {
         print_warn "Некоторые пакеты не установились. Продолжаем..."
     }
 }
