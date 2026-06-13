@@ -1,0 +1,28 @@
+# ═══════════════════════════════════════════════════════════════
+# Стратегия: custom (пример)
+# DESC: Скопируй этот файл в custom.conf и настрой под себя
+# ═══════════════════════════════════════════════════════════════
+
+# Режим работы: nfqws или tpws
+NFQWS_MODE="nfqws"
+
+# Номер очереди NFQUEUE
+NFQWS_QNUM="200"
+
+# Размер окна (TCP window size)
+# --wssize=1:6 — базовый
+# --wssize=1:-1 — не менять
+# --wssize=0:0 — отключить
+NFQWS_WSSIZE="--wssize=1:6"
+
+# Метод десинхронизации DPI:
+# fake, fakeknown, hostcase, hostnospace, methodeol
+# multisplit, multidisorder, fakedsplit, hostfakesplit
+# fakeddisorder, ipfrag1, ipfrag2, syndata, tamper
+NFQWS_DESYNC="--dpi-desync=fake"
+
+# Дополнительные параметры
+NFQWS_EXTRA=""
+
+# Список доменов для этой стратегии
+# NFQWS_HOSTLIST="/etc/zapret/lists/custom.txt"

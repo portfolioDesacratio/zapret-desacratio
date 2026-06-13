@@ -1,0 +1,11 @@
+# zapret-desacratio .gitignore
+*.log
+*.tmp
+*.swp
+*.swo
+*~
+.DS_Store
+__pycache__/
+node_modules/
+zapret-core/
+/tmp/

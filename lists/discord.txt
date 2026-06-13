@@ -1,0 +1,9 @@
+# Discord-related domains
+discord.com
+discord.gg
+discordapp.net
+discordmedia.com
+discord-attachments.com
+discord-activity.com
+discord.dev
+discordstatus.com

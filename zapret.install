@@ -1,0 +1,25 @@
+post_install() {
+    echo ""
+    echo "  ╔══════════════════════════════════════════════════════════════╗"
+    echo "  ║              zapret-desacratio установлен!                   ║"
+    echo "  ╚══════════════════════════════════════════════════════════════╝"
+    echo ""
+    echo "  Для запуска панели управления:"
+    echo "       zapret"
+    echo ""
+    echo "  Для запуска сервиса:"
+    echo "       sudo systemctl start zapret"
+    echo ""
+    echo "  Логи: /var/log/zapret.log"
+    echo "  Конфиг: /etc/zapret/config.sh"
+    echo ""
+}
+
+post_upgrade() {
+    post_install
+}
+
+pre_remove() {
+    echo "Остановка zapret..."
+    systemctl stop zapret 2>/dev/null || true
+}

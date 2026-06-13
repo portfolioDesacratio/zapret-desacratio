@@ -1,0 +1,9 @@
+# YouTube-related domains
+youtube.com
+youtubekids.com
+ytimg.com
+googlevideo.com
+ggpht.com
+withyoutube.com
+youtubei.googleapis.com
+youtubemusic.googleapis.com
