@@ -237,17 +237,24 @@ build_zapret() {
     # Install binaries
     print_info "Установка бинарных файлов..."
     mkdir -p /opt/zapret/bin
-    cp -f nfqws/nfqws /opt/zapret/bin/
-    cp -f tpws/tpws /opt/zapret/bin/
-    cp -f ip2net/ip2net /opt/zapret/bin/
-    cp -f mdig/mdig /opt/zapret/bin/
+    # The Makefile's "all" target moves built exes to binaries/my/
+    if [ -d "binaries/my" ]; then
+        cp -f binaries/my/* /opt/zapret/bin/
+    else
+        # Fallback: copy from subdirs directly (unlikely but safe)
+        cp -f nfq/nfqws /opt/zapret/bin/ 2>/dev/null
+        cp -f tpws/tpws /opt/zapret/bin/ 2>/dev/null
+        cp -f ip2net/ip2net /opt/zapret/bin/ 2>/dev/null
+        cp -f mdig/mdig /opt/zapret/bin/ 2>/dev/null
+    fi
     chmod +x /opt/zapret/bin/*
     
     # Symlinks
     ln -sf /opt/zapret/bin/nfqws /usr/local/bin/nfqws
     ln -sf /opt/zapret/bin/tpws /usr/local/bin/tpws
     
-    # Cleanup
+    # Cleanup (cd out first so we don't hold a reference to a deleted dir)
+    cd /
     rm -rf "$tmpdir"
     print_success "Бинарные файлы установлены в ${C_BOLD}/opt/zapret/bin${C_RESET}"
 }
