@@ -23,6 +23,7 @@ makedepends=(
     'gcc'
     'make'
     'base-devel'
+    'libnetfilter_queue'
 )
 conflicts=('zapret')
 provides=('zapret')

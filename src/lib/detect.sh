@@ -141,7 +141,7 @@ get_install_cmd() {
 get_build_deps() {
     case "$DISTRO_FAMILY" in
         arch)
-            echo "base-devel libcap git"
+            echo "base-devel libcap git libnetfilter_queue iptables"
             ;;
         debian)
             echo "build-essential libcap-dev git libnetfilter-queue-dev libpcap-dev"

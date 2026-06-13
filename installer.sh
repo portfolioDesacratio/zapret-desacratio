@@ -162,7 +162,7 @@ pre_checks() {
 install_deps() {
     case "$DISTRO" in
         arch|artix|manjaro|endeavour|garuda|cachyos)
-            DEPS="base-devel libcap git"
+            DEPS="base-devel libcap git libnetfilter_queue iptables"
             INSTALL_CMD="$PKG_MGR -S --noconfirm"
             ;;
         debian|ubuntu|mint|kali|pop|zorin)
