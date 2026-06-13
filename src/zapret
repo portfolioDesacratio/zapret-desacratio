@@ -6,311 +6,206 @@
 SCRIPT_DIR="$(cd "$(dirname "$(realpath "$0")")" && pwd)"
 
 load_libs() {
-    local lib_paths=("$SCRIPT_DIR/lib" "/opt/zapret/lib")
-
-    for path in "${lib_paths[@]}"; do
-        if [[ -d "$path" ]]; then
-            for lib in "$path"/*.sh; do
-                source "$lib"
-            done
-            return 0
-        fi
-    done
-
-    echo "Error: Cannot find library files"
-    echo "Tried: ${lib_paths[*]}"
-    exit 1
+  local lib_paths=("$SCRIPT_DIR/lib" "/opt/zapret/lib")
+  for path in "${lib_paths[@]}"; do
+    if [[ -d "$path" ]]; then
+      for lib in "$path"/*.sh; do source "$lib"; done
+      return 0
+    fi
+  done
+  echo "Error: lib not found in ${lib_paths[*]}"
+  exit 1
 }
 
 load_libs
 load_config
 
-# ═══════════════════════════════════════════════════════════════
-# BANNER
-# ═══════════════════════════════════════════════════════════════
-
-show_banner() {
-    printf "${F_FROST3}╔══════════════════════════════════════════════════════════════╗${C_RESET}\n"
-    printf "${F_FROST3}║${C_RESET}                                                              ${F_FROST3}║${C_RESET}\n"
-    printf "${F_FROST3}║${C_RESET}    ${F_FROST2}███████╗ █████╗ ██████╗ ██████╗ ███████╗████████╗${C_RESET}    ${F_FROST3}║${C_RESET}\n"
-    printf "${F_FROST3}║${C_RESET}    ${F_FROST2}╚══███╔╝██╔══██╗██╔══██╗██╔══██╗██╔════╝╚══██╔══╝${C_RESET}    ${F_FROST3}║${C_RESET}\n"
-    printf "${F_FROST3}║${C_RESET}    ${F_FROST1}  ███╔╝ ███████║██████╔╝██████╔╝█████╗     ██║   ${C_RESET}    ${F_FROST3}║${C_RESET}\n"
-    printf "${F_FROST3}║${C_RESET}    ${F_FROST1} ███╔╝  ██╔══██║██╔═══╝ ██╔══██╗██╔══╝     ██║   ${C_RESET}    ${F_FROST3}║${C_RESET}\n"
-    printf "${F_FROST3}║${C_RESET}    ${F_FROST0}███████╗██║  ██║██║     ██║  ██║███████╗   ██║   ${C_RESET}    ${F_FROST3}║${C_RESET}\n"
-    printf "${F_FROST3}║${C_RESET}    ${F_FROST0}╚══════╝╚═╝  ╚═╝╚═╝     ╚═╝  ╚═╝╚══════╝   ╚═╝   ${C_RESET}    ${F_FROST3}║${C_RESET}\n"
-    printf "${F_FROST3}║${C_RESET}                                                              ${F_FROST3}║${C_RESET}\n"
-    printf "${F_FROST3}║${C_RESET}                  ${F_FROST1}zapret-desacratio${C_RESET}                         ${F_FROST3}║${C_RESET}\n"
-    printf "${F_FROST3}║${C_RESET}                ${F_NORD3}Обход блокировок DPI${C_RESET}                        ${F_FROST3}║${C_RESET}\n"
-    printf "${F_FROST3}║${C_RESET}                                                              ${F_FROST3}║${C_RESET}\n"
-    printf "${F_FROST3}╚══════════════════════════════════════════════════════════════╝${C_RESET}\n"
+# ─── Баннер ──────────────────────────────────────────────
+banner() {
+  printf "\n"
+  printf "  ${F_FROST2}███████╗ █████╗ ██████╗ ██████╗ ███████╗████████╗${C_RESET}\n"
+  printf "  ${F_FROST2}╚══███╔╝██╔══██╗██╔══██╗██╔══██╗██╔════╝╚══██╔══╝${C_RESET}\n"
+  printf "  ${F_FROST1}  ███╔╝ ███████║██████╔╝██████╔╝█████╗     ██║   ${C_RESET}\n"
+  printf "  ${F_FROST1} ███╔╝  ██╔══██║██╔═══╝ ██╔══██╗██╔══╝     ██║   ${C_RESET}\n"
+  printf "  ${F_FROST0}███████╗██║  ██║██║     ██║  ██║███████╗   ██║   ${C_RESET}\n"
+  printf "  ${F_FROST0}╚══════╝╚═╝  ╚═╝╚═╝     ╚═╝  ╚═╝╚══════╝   ╚═╝   ${C_RESET}\n"
+  printf "  ${F_NORD3}zapret-desacratio · обход DPI${C_RESET}\n"
 }
 
-# ═══════════════════════════════════════════════════════════════
-# MAIN MENU
-# ═══════════════════════════════════════════════════════════════
+# ─── Главное меню ───────────────────────────────────────
+menu() {
+  local s
+  s=$(get_service_status)
+  local st=""
+  case "$s" in
+    running) st="${SYM_RUNNING} работает" ;;
+    stopped) st="${SYM_STOPPED} остановлен" ;;
+    enabled) st="${SYM_WARN} включён (не запущен)" ;;
+  esac
 
-show_menu() {
-    print_line
-    print_title "ГЛАВНОЕ МЕНЮ"
-    print_line
+  printf "\n  ${F_NORD3}статус${C_RESET}  ${st}\n"
+  sep
 
-    local status
-    status=$(get_service_status)
-    local status_str=""
-    case "$status" in
-        running) status_str="${SYM_RUNNING} Работает" ;;
-        stopped) status_str="${SYM_STOPPED} Остановлен" ;;
-        enabled) status_str="${SYM_WARN} Включён (не запущен)" ;;
-    esac
-
-    printf "  ${F_NORD3}Статус:${C_RESET} %s\n\n" "$status_str"
-
-    print_menu_item "1"  "Запуск/Остановка/Перезапуск"  "Управление сервисом zapret"
-    print_menu_item "2"  "Статус сервиса"               "Просмотр состояния и метрик"
-    print_menu_item "3"  "Выбор стратегии"               "Выбор активной стратегии обхода"
-    print_menu_item "4"  "Создать кастомную стратегию"   "Создание своей стратегии обхода"
-    print_menu_item "5"  "Редактировать текущую"         "Редактирование активной стратегии"
-    print_menu_item "6"  "Управление списками доменов"   "Добавление и удаление доменов"
-    print_menu_item "7"  "Проверка доступа к домену"     "Диагностика доступности сайта"
-    print_menu_item "8"  "Смена темы"                    "Выбор цветовой схемы оформления"
-    print_menu_item "9"  "Просмотр логов"                "Последние записи системного лога"
-    print_menu_item "10" "Обновление стратегий и списков" "Загрузка актуальных конфигураций"
-    print_menu_item "11" "Настройки"                     "Порты, отладка, автозапуск"
-    print_menu_item "12" "Удаление"                      "Полное удаление zapret"
-    print_menu_item "13" "Выход"                         "Завершение программы"
-
-    print_footer
+  item 1  "Запуск / Стоп / Рестарт"     "управление сервисом"
+  item 2  "Статус"                       "состояние и метрики"
+  item 3  "Выбрать стратегию"            "сменить режим обхода"
+  item 4  "Своя стратегия"               "создать с нуля"
+  item 5  "Править текущую"              "редактор стратегии"
+  item 6  "Списки доменов"               "добавить / убрать сайты"
+  item 7  "Проверить домен"              "доступен ли сайт"
+  item 8  "Тема"                         "сменить раскраску"
+  item 9  "Логи"                         "последние записи"
+  item 10 "Обновить"                     "стратегии и списки"
+  item 11 "Настройки"                    "порты, отладка"
+  item 12 "Удалить"                      "полностью снести"
+  item 13 "Выход"                        "выйти"
 }
 
-# ═══════════════════════════════════════════════════════════════
-# SERVICE CONTROL SUBMENU
-# ═══════════════════════════════════════════════════════════════
+# ─── Саб-меню: сервис ───────────────────────────────────
+menu_service() {
+  clear_screen
+  header "Сервис"
+  item 1 "Запустить"
+  item 2 "Остановить"
+  item 3 "Перезапустить"
+  item 0 "← Назад"
+  footer
 
-service_control_menu() {
-    clear_screen
-    print_line
-    print_title "УПРАВЛЕНИЕ СЕРВИСОМ"
-    print_line
-
-    printf "\n"
-    printf "  ${F_FROST2}${C_BOLD}1)${C_RESET} ${F_NORD6}Запустить${C_RESET}\n"
-    printf "  ${F_FROST2}${C_BOLD}2)${C_RESET} ${F_NORD6}Остановить${C_RESET}\n"
-    printf "  ${F_FROST2}${C_BOLD}3)${C_RESET} ${F_NORD6}Перезапустить${C_RESET}\n"
-    printf "  ${F_FROST2}${C_BOLD}0)${C_RESET} ${F_NORD3}Назад${C_RESET}\n"
-    print_footer
-
-    printf "\n  ${F_NORD3}Выбери действие:${C_RESET} "
-    read -r choice
-
-    case "$choice" in
-        1) service_start ;;
-        2) service_stop ;;
-        3) service_restart ;;
-        0) return ;;
-        *) print_warn "Неверный выбор" ;;
-    esac
-    [[ "$choice" =~ ^[0-3]$ ]] && pause
+  printf "  > "
+  read -r c
+  case "$c" in
+    1) service_start ;;
+    2) service_stop ;;
+    3) service_restart ;;
+    0) return ;;
+    *) warn "не, такого нет" ;;
+  esac
+  [[ "$c" =~ ^[0-3]$ ]] && pause
 }
 
-# ═══════════════════════════════════════════════════════════════
-# VIEW LOGS
-# ═══════════════════════════════════════════════════════════════
-
-view_logs() {
-    clear_screen
-    print_line
-    print_title "ЛОГИ ZAPRET"
-    print_line
-
-    if [[ ! -f "$ZAPRET_LOG" ]]; then
-        printf "\n"
-        print_info "Лог-файл не найден: $ZAPRET_LOG"
-        print_footer
-        pause
-        return
-    fi
-
-    local lines=50
-
-    printf "\n"
-    if [[ -r "$ZAPRET_LOG" ]]; then
-        tail -n "$lines" "$ZAPRET_LOG" | while IFS= read -r line; do
-            printf "  ${F_NORD4}%s${C_RESET}\n" "$line"
-        done
-    else
-        if cmd_exists sudo; then
-            sudo tail -n "$lines" "$ZAPRET_LOG" 2>/dev/null | while IFS= read -r line; do
-                printf "  ${F_NORD4}%s${C_RESET}\n" "$line"
-            done
-        else
-            print_error "Нет доступа к лог-файлу"
-        fi
-    fi
-
-    printf "\n"
-    print_info "Показано последних ${lines} строк: $ZAPRET_LOG"
-    print_footer
+# ─── Логи ───────────────────────────────────────────────
+menu_logs() {
+  clear_screen
+  header "Логи"
+  if [[ ! -f "$ZAPRET_LOG" ]]; then
+    info "лог не найден: $ZAPRET_LOG"
+    footer
     pause
+    return
+  fi
+
+  local lines=50
+  if [[ -r "$ZAPRET_LOG" ]]; then
+    tail -n "$lines" "$ZAPRET_LOG" | while IFS= read -r line; do
+      printf "  ${F_NORD4}%s${C_RESET}\n" "$line"
+    done
+  elif cmd_exists sudo; then
+    sudo tail -n "$lines" "$ZAPRET_LOG" 2>/dev/null | while IFS= read -r line; do
+      printf "  ${F_NORD4}%s${C_RESET}\n" "$line"
+    done
+  else
+    fail "нет доступа к логу"
+  fi
+  printf "\n"
+  dim "последних $lines строк · $ZAPRET_LOG"
+  footer
+  pause
 }
 
-# ═══════════════════════════════════════════════════════════════
-# SETTINGS MENU
-# ═══════════════════════════════════════════════════════════════
+# ─── Настройки ──────────────────────────────────────────
+menu_settings() {
+  while true; do
+    clear_screen
+    header "Настройки"
 
-settings_menu() {
-    while true; do
-        clear_screen
-        print_line
-        print_title "НАСТРОЙКИ"
-        print_line
+    local as ds
+    [[ "$ZAPRET_AUTOSTART" == "true" ]] && as="${F_GREEN}вкл${C_RESET}" || as="${F_RED}выкл${C_RESET}"
+    [[ "$ZAPRET_DEBUG" == "true" ]] && ds="${F_YELLOW}вкл${C_RESET}" || ds="${F_NORD3}выкл${C_RESET}"
 
-        local autostart_str=""
+    printf "\n"
+    info "порты          ${F_NORD5}${ZAPRET_PORT_RANGE:-80, 443}${C_RESET}"
+    info "отладка        $ds"
+    info "автозапуск     $as"
+    info "стратегия      ${F_FROST1}${ZAPRET_STRATEGY:-default}${C_RESET}"
+    info "тема           ${F_PURPLE}${ZAPRET_THEME:-nord}${C_RESET}"
+    printf "\n"
+
+    item 1 "Сменить порты"
+    item 2 "Отладка вкл/выкл"
+    item 3 "Автозапуск вкл/выкл"
+    item 0 "← Назад"
+    footer
+
+    printf "  > "
+    read -r c
+
+    case "$c" in
+      1)
+        printf "\n  ${F_NORD3}порты (например 80,443,5228):${C_RESET} "
+        read -r ports
+        if [[ -n "$ports" ]]; then
+          ZAPRET_PORT_RANGE="$ports"
+          save_config
+          ok "порты → $ports"
+          pause
+        fi
+        ;;
+      2)
+        [[ "$ZAPRET_DEBUG" == "true" ]] && ZAPRET_DEBUG="false" || ZAPRET_DEBUG="true"
+        save_config
+        ok "отладка: $ZAPRET_DEBUG"
+        pause
+        ;;
+      3)
         if [[ "$ZAPRET_AUTOSTART" == "true" ]]; then
-            autostart_str="${F_GREEN}Включён${C_RESET}"
+          ZAPRET_AUTOSTART="false"; service_disable; info "автозапуск выключен"
         else
-            autostart_str="${F_RED}Выключен${C_RESET}"
+          ZAPRET_AUTOSTART="true";  service_enable;  info "автозапуск включён"
         fi
-
-        local debug_str=""
-        if [[ "$ZAPRET_DEBUG" == "true" ]]; then
-            debug_str="${F_YELLOW}Включён${C_RESET}"
-        else
-            debug_str="${F_NORD3}Выключен${C_RESET}"
-        fi
-
-        printf "\n"
-        print_status "Порты для обработки:"     "${ZAPRET_PORT_RANGE:-80, 443}"
-        print_status "Режим отладки:"           "$debug_str"
-        print_status "Автозапуск:"              "$autostart_str"
-        print_status "Текущая стратегия:"       "${ZAPRET_STRATEGY:-default}" "$F_FROST1"
-        print_status "Тема оформления:"         "${ZAPRET_THEME:-nord}" "$F_PURPLE"
-
-        printf "\n"
-        printf "  ${F_FROST2}${C_BOLD}1)${C_RESET} ${F_NORD6}Изменить порты${C_RESET}\n"
-        printf "  ${F_FROST2}${C_BOLD}2)${C_RESET} ${F_NORD6}Переключить режим отладки${C_RESET}\n"
-        printf "  ${F_FROST2}${C_BOLD}3)${C_RESET} ${F_NORD6}Переключить автозапуск${C_RESET}\n"
-        printf "  ${F_FROST2}${C_BOLD}0)${C_RESET} ${F_NORD3}Назад${C_RESET}\n"
-        print_footer
-
-        printf "\n  ${F_NORD3}Выбери настройку:${C_RESET} "
-        read -r choice
-
-        case "$choice" in
-            1)
-                printf "\n  ${F_NORD3}Введи порты (например: 80,443,5228):${C_RESET} "
-                read -r ports
-                if [[ -n "$ports" ]]; then
-                    ZAPRET_PORT_RANGE="$ports"
-                    save_config
-                    print_success "Порты изменены: $ports"
-                    pause
-                fi
-                ;;
-            2)
-                if [[ "$ZAPRET_DEBUG" == "true" ]]; then
-                    ZAPRET_DEBUG="false"
-                else
-                    ZAPRET_DEBUG="true"
-                fi
-                save_config
-                print_success "Режим отладки: $ZAPRET_DEBUG"
-                pause
-                ;;
-            3)
-                if [[ "$ZAPRET_AUTOSTART" == "true" ]]; then
-                    ZAPRET_AUTOSTART="false"
-                    print_info "Отключение автозапуска..."
-                    service_disable
-                else
-                    ZAPRET_AUTOSTART="true"
-                    print_info "Включение автозапуска..."
-                    service_enable
-                fi
-                save_config
-                pause
-                ;;
-            0) return ;;
-        esac
-    done
+        save_config
+        pause
+        ;;
+      0) return ;;
+    esac
+  done
 }
 
-# ═══════════════════════════════════════════════════════════════
-# MAIN LOOP
-# ═══════════════════════════════════════════════════════════════
-
+# ─── Цикл ───────────────────────────────────────────────
 main() {
-    while true; do
+  while true; do
+    clear_screen
+    banner
+    menu
+
+    printf "\n  ${F_NORD3}>${C_RESET} "
+    read -r c
+
+    case "$c" in
+      1) menu_service ;;
+      2) clear_screen; show_service_status; pause ;;
+      3) clear_screen; list_strategies ;;
+      4) clear_screen; create_custom_strategy; pause ;;
+      5) clear_screen; edit_current_strategy; pause ;;
+      6) show_lists_menu ;;
+      7) clear_screen; check_domain ;;
+      8) switch_theme ;;
+      9) menu_logs ;;
+      10) clear_screen; update_strategies; pause ;;
+      11) menu_settings ;;
+      12)
         clear_screen
-        show_banner
-        printf "\n"
-        show_menu
-
-        printf "\n  ${F_NORD3}Введи номер пункта:${C_RESET} "
-        read -r choice
-
-        case "$choice" in
-            1)
-                service_control_menu
-                ;;
-            2)
-                clear_screen
-                show_service_status
-                pause
-                ;;
-            3)
-                clear_screen
-                list_strategies
-                ;;
-            4)
-                clear_screen
-                create_custom_strategy
-                pause
-                ;;
-            5)
-                clear_screen
-                edit_current_strategy
-                pause
-                ;;
-            6)
-                show_lists_menu
-                ;;
-            7)
-                clear_screen
-                check_domain
-                ;;
-            8)
-                switch_theme
-                ;;
-            9)
-                view_logs
-                ;;
-            10)
-                clear_screen
-                update_strategies
-                pause
-                ;;
-            11)
-                settings_menu
-                ;;
-            12)
-                clear_screen
-                print_line
-                print_title "УДАЛЕНИЕ ZAPRET"
-                print_line
-                uninstall_zapret
-                pause
-                ;;
-            13|q|Q|exit)
-                clear_screen
-                print_success "До свидания!"
-                exit 0
-                ;;
-            *)
-                print_warn "Неверный выбор. Попробуй снова."
-                sleep 1
-                ;;
-        esac
-    done
+        header "Удаление"
+        uninstall_zapret
+        pause
+        ;;
+      13|q|Q|exit)
+        clear_screen
+        ok "пока!"
+        exit 0
+        ;;
+      *) warn "не, такого нет" ; sleep 1 ;;
+    esac
+  done
 }
 
 main "$@"
